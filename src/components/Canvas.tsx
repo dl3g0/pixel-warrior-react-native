@@ -1,88 +1,83 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, FlatList, Dimensions } from 'react-native';
 import { socket } from '../services/socket';
 
-interface CanvasProps {
-  size: number;
-  nickname: string;
-  selectedColor: string;
-  onPixelInfo: (info: string) => void;
-}
-
-const Canvas: React.FC<CanvasProps> = ({ size, nickname, selectedColor, onPixelInfo }) => {
+const Canvas = ({ size, nickname, selectedColor, onPixelInfo }) => {
   const [canvas, setCanvas] = useState<string[][]>(() => 
     Array.from({ length: 100 }, () => Array(100).fill('#FFFFFF'))
   );
   const [loading, setLoading] = useState(true);
 
+  // Tamaño del píxel calculado una sola vez
+  const pixelSize = useMemo(() => Math.floor(size / 100), [size]);
+
+  // Escuchar eventos del socket
   useEffect(() => {
     const onCanvasData = (firebaseData: string[][]) => {
-      // Asegurarnos que los datos tienen el formato correcto
       const validatedData = Array.from({ length: 100 }, (_, x) => 
-        Array.from({ length: 100 }, (_, y) => 
-          firebaseData[x]?.[y] || '#FFFFFF'
-        )
+        Array.from({ length: 100 }, (_, y) => firebaseData[x]?.[y] || '#FFFFFF')
       );
-      
       setCanvas(validatedData);
       setLoading(false);
     };
-  
-    const onPixelChange = ({ x, y, color }: { x: number; y: number; color: string }) => {
+
+    const onPixelChange = ({ x, y, color }) => {
       setCanvas(prev => {
         const newCanvas = [...prev];
-        newCanvas[x] = [...newCanvas[x]]; // Copiar la fila
+        newCanvas[x] = [...newCanvas[x]];
         newCanvas[x][y] = color;
         return newCanvas;
       });
     };
-  
+
     socket.on('canvasData', onCanvasData);
     socket.on('pixelChange', onPixelChange);
     socket.emit('requestCanvasData');
-  
+
     return () => {
       socket.off('canvasData', onCanvasData);
       socket.off('pixelChange', onPixelChange);
     };
   }, []);
 
-  const handlePixelPress = (x: number, y: number) => {
+  // Manejo optimizado del toque en un píxel
+  const handlePixelPress = useCallback((x: number, y: number) => {
     if (!nickname) {
-      alert('Ingresa tu nickname antes de colocar píxeles.');
+      onPixelInfo('Ingresa tu nickname antes de pintar');
       return;
     }
-  
-    // Actualización OPTIMISTA del estado local primero
-    setCanvas(prev => {
-      const newCanvas = [...prev];
-      newCanvas[x] = [...newCanvas[x]]; // Copiar la fila
-      newCanvas[x][y] = selectedColor;  // Pintar inmediatamente
-      return newCanvas;
-    });
-  
-    // Luego enviar al servidor
-    socket.emit('pixelChange', { x, y, color: selectedColor });
-  };
-
-  const handlePixelLongPress = (x: number, y: number) => {
-    if (!nickname) {
-      alert('Ingresa tu nickname antes de modificar píxeles.');
-      return;
-    }
-  
-    // Actualización OPTIMISTA
+    
+    // Actualización optimista
     setCanvas(prev => {
       const newCanvas = [...prev];
       newCanvas[x] = [...newCanvas[x]];
-      newCanvas[x][y] = '#FFFFFF';  // Borrar inmediatamente
+      newCanvas[x][y] = selectedColor;
       return newCanvas;
     });
-  
-    socket.emit('pixelChange', { x, y, color: '#FFFFFF' });
-  };
 
-  const pixelSize = Math.floor(size / 100);
+    socket.emit('pixelChange', { x, y, color: selectedColor });
+    onPixelInfo(`Píxel (${x}, ${y}) pintado con ${selectedColor}`);
+  }, [nickname, selectedColor]);
+
+  // Renderizar una fila de píxeles (optimizado con React.memo)
+  const renderRow = useCallback(({ item: row, index: x }) => (
+    <View style={styles.row}>
+      {row.map((color, y) => (
+        <TouchableOpacity
+          key={`pixel-${y}`}
+          onPress={() => handlePixelPress(x, y)}
+          style={[
+            styles.pixel,
+            { 
+              backgroundColor: color,
+              width: pixelSize,
+              height: pixelSize,
+            }
+          ]}
+        />
+      ))}
+    </View>
+  ), [handlePixelPress, pixelSize]);
 
   if (loading) {
     return (
@@ -93,26 +88,16 @@ const Canvas: React.FC<CanvasProps> = ({ size, nickname, selectedColor, onPixelI
   }
 
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
-      {canvas.map((row, x) => (
-        <View key={`row-${x}`} style={styles.row}>
-          {row.map((color, y) => (
-            <TouchableOpacity
-              key={`pixel-${x}-${y}`}
-              onPress={() => handlePixelPress(x, y)}
-              style={[
-                styles.pixel,
-                { 
-                  backgroundColor: color,
-                  width: pixelSize,
-                  height: pixelSize
-                }
-              ]}
-            />
-          ))}
-        </View>
-      ))}
-    </View>
+    <FlatList
+      data={canvas}
+      renderItem={renderRow}
+      keyExtractor={(_, x) => `row-${x}`}
+      scrollEnabled={false}
+      style={{ width: size, height: size }}
+      initialNumToRender={10} // Solo renderiza 10 filas inicialmente
+      maxToRenderPerBatch={10} // Máximo 10 filas por lote
+      windowSize={21} // 10 filas arriba/abajo + 1 visible
+    />
   );
 };
 
@@ -134,4 +119,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Canvas;
+export default React.memo(Canvas); // Evita re-renders innecesarios

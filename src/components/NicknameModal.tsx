@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 
-interface NicknameModalProps {
-  visible: boolean;
-  onConfirm: (nickname: string) => void;
-  onCancel: () => void;
-}
-
-const NicknameModal: React.FC<NicknameModalProps> = ({ visible, onConfirm, onCancel }) => {
+const NicknameModal = ({ visible, onConfirm, onCancel }) => {
   const [nickname, setNickname] = useState('');
 
   return (

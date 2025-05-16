@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 
-interface ColorPickerProps {
-  onColorChange: (color: string) => void;
-}
-
-const ColorPicker: React.FC<ColorPickerProps> = ({ onColorChange }) => {
+const ColorPicker = ({ onColorChange }) => {
   const [selectedColor, setSelectedColor] = useState('#000000');
 
   const colors = [
