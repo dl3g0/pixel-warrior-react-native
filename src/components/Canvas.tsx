@@ -1,27 +1,41 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, FlatList, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import Svg, { Rect } from 'react-native-svg';
 import { socket } from '../services/socket';
 
-const Canvas = ({ size, nickname, selectedColor, onPixelInfo }) => {
-  const [canvas, setCanvas] = useState<string[][]>(() => 
+interface PixelChange {
+  x: number;
+  y: number;
+  color: string;
+}
+
+interface CanvasProps {
+  size: number;
+  nickname: string;
+  selectedColor: string;
+  onPixelInfo: (msg: string) => void;
+}
+
+const Canvas: React.FC<CanvasProps> = ({ size, nickname, selectedColor, onPixelInfo }) => {
+  const [canvas, setCanvas] = useState<string[][]>(() =>
     Array.from({ length: 100 }, () => Array(100).fill('#FFFFFF'))
   );
   const [loading, setLoading] = useState(true);
 
-  // Tamaño del píxel calculado una sola vez
-  const pixelSize = useMemo(() => Math.floor(size / 100), [size]);
+  // Tamaño píxel
+  const pixelSize = useMemo(() => size / 100, [size]);
 
-  // Escuchar eventos del socket
+  // Escuchar socket para datos y cambios de píxeles
   useEffect(() => {
     const onCanvasData = (firebaseData: string[][]) => {
-      const validatedData = Array.from({ length: 100 }, (_, x) => 
+      const validatedData = Array.from({ length: 100 }, (_, x) =>
         Array.from({ length: 100 }, (_, y) => firebaseData[x]?.[y] || '#FFFFFF')
       );
       setCanvas(validatedData);
       setLoading(false);
     };
 
-    const onPixelChange = ({ x, y, color }) => {
+    const onPixelChange = ({ x, y, color }: PixelChange) => {
       setCanvas(prev => {
         const newCanvas = [...prev];
         newCanvas[x] = [...newCanvas[x]];
@@ -40,14 +54,13 @@ const Canvas = ({ size, nickname, selectedColor, onPixelInfo }) => {
     };
   }, []);
 
-  // Manejo optimizado del toque en un píxel
+  // Manejar toque en píxel
   const handlePixelPress = useCallback((x: number, y: number) => {
     if (!nickname) {
       onPixelInfo('Ingresa tu nickname antes de pintar');
       return;
     }
-    
-    // Actualización optimista
+
     setCanvas(prev => {
       const newCanvas = [...prev];
       newCanvas[x] = [...newCanvas[x]];
@@ -59,26 +72,6 @@ const Canvas = ({ size, nickname, selectedColor, onPixelInfo }) => {
     onPixelInfo(`Píxel (${x}, ${y}) pintado con ${selectedColor}`);
   }, [nickname, selectedColor]);
 
-  // Renderizar una fila de píxeles (optimizado con React.memo)
-  const renderRow = useCallback(({ item: row, index: x }) => (
-    <View style={styles.row}>
-      {row.map((color, y) => (
-        <TouchableOpacity
-          key={`pixel-${y}`}
-          onPress={() => handlePixelPress(x, y)}
-          style={[
-            styles.pixel,
-            { 
-              backgroundColor: color,
-              width: pixelSize,
-              height: pixelSize,
-            }
-          ]}
-        />
-      ))}
-    </View>
-  ), [handlePixelPress, pixelSize]);
-
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { width: size, height: size }]}>
@@ -88,35 +81,34 @@ const Canvas = ({ size, nickname, selectedColor, onPixelInfo }) => {
   }
 
   return (
-    <FlatList
-      data={canvas}
-      renderItem={renderRow}
-      keyExtractor={(_, x) => `row-${x}`}
-      scrollEnabled={false}
-      style={{ width: size, height: size }}
-      initialNumToRender={10} // Solo renderiza 10 filas inicialmente
-      maxToRenderPerBatch={10} // Máximo 10 filas por lote
-      windowSize={21} // 10 filas arriba/abajo + 1 visible
-    />
+    <View style={{ width: size, height: size }}>
+      <Svg width={size} height={size}>
+        {canvas.map((row, x) =>
+          row.map((color, y) => (
+            <Rect
+              key={`pixel-${x}-${y}`}
+              x={y * pixelSize}
+              y={x * pixelSize}
+              width={pixelSize}
+              height={pixelSize}
+              fill={color}
+              stroke="#ddd"
+              strokeWidth={0.3}
+              onPress={() => handlePixelPress(x, y)}
+            />
+          ))
+        )}
+      </Svg>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f0f0f0',
-  },
   loadingContainer: {
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
   },
-  row: {
-    flexDirection: 'row',
-  },
-  pixel: {
-    borderWidth: 0.3,
-    borderColor: '#ddd',
-  },
 });
 
-export default React.memo(Canvas); // Evita re-renders innecesarios
+export default React.memo(Canvas);
