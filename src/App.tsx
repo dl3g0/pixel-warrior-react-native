@@ -1,5 +1,5 @@
 import { enableScreens } from 'react-native-screens';
-enableScreens(true);  // Habilita las pantallas nativas ANTES de cualquier render
+enableScreens(true);
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';

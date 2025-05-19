@@ -49,7 +49,7 @@ const GameScreen: React.FC = () => {
 
         <View style={styles.canvasContainer}>
           <Canvas
-            size={500} // Adjust size as needed
+            size={500}
             nickname={nickname}
             selectedColor={selectedColor}
             onPixelInfo={setPixelInfo}
@@ -58,7 +58,7 @@ const GameScreen: React.FC = () => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>© 2024 Pixel Warrior</Text>
+        <Text style={styles.footerText}>© 2025 Pixel Warrior</Text>
       </View>
 
       <NicknameModal

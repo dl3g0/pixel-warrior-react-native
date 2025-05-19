@@ -3,23 +3,8 @@ import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { socket } from '../services/socket';
 
-interface PixelChange {
-  x: number;
-  y: number;
-  color: string;
-}
-
-interface CanvasProps {
-  size: number;
-  nickname: string;
-  selectedColor: string;
-  onPixelInfo: (msg: string) => void;
-}
-
-const Canvas: React.FC<CanvasProps> = ({ size, nickname, selectedColor, onPixelInfo }) => {
-  const [canvas, setCanvas] = useState<string[][]>(() =>
-    Array.from({ length: 100 }, () => Array(100).fill('#FFFFFF'))
-  );
+const Canvas = ({ size, nickname, selectedColor, onPixelInfo }) => {
+  const [canvas, setCanvas] = useState(() => Array.from({ length: 100 }, () => Array(100).fill('#FFFFFF')));
   const [loading, setLoading] = useState(true);
 
   // Tamaño píxel
@@ -27,7 +12,7 @@ const Canvas: React.FC<CanvasProps> = ({ size, nickname, selectedColor, onPixelI
 
   // Escuchar socket para datos y cambios de píxeles
   useEffect(() => {
-    const onCanvasData = (firebaseData: string[][]) => {
+    const onCanvasData = (firebaseData) => {
       const validatedData = Array.from({ length: 100 }, (_, x) =>
         Array.from({ length: 100 }, (_, y) => firebaseData[x]?.[y] || '#FFFFFF')
       );
@@ -35,7 +20,7 @@ const Canvas: React.FC<CanvasProps> = ({ size, nickname, selectedColor, onPixelI
       setLoading(false);
     };
 
-    const onPixelChange = ({ x, y, color }: PixelChange) => {
+    const onPixelChange = ({ x, y, color }) => {
       setCanvas(prev => {
         const newCanvas = [...prev];
         newCanvas[x] = [...newCanvas[x]];
@@ -80,6 +65,7 @@ const Canvas: React.FC<CanvasProps> = ({ size, nickname, selectedColor, onPixelI
     );
   }
 
+  
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size}>
