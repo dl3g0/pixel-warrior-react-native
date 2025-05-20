@@ -1,23 +1,7 @@
-/**
- * Componente `NicknameModal` que muestra un modal para que el usuario ingrese su nickname.
- *
- * Este modal es controlado por la prop `visible`. Cuando está visible, presenta un campo
- * de texto para que el usuario escriba su nickname y botones para confirmar o cancelar.
- * Al confirmar, llama a la función `onConfirm` proporcionada por el componente padre con
- * el nickname ingresado. Al cancelar, llama a la función `onCancel`.
- *
- * @module NicknameModal
- */
-
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 
 const NicknameModal = ({ visible, onConfirm, onCancel }) => {
-  /**
-   * Estado para almacenar el nickname que el usuario está ingresando.
-   * Inicialmente está vacío.
-   * @useState {string}
-   */
   const [nickname, setNickname] = useState('');
 
   return (
@@ -55,10 +39,6 @@ const NicknameModal = ({ visible, onConfirm, onCancel }) => {
     </Modal>
   );
 };
-
-/**
- * Hoja de estilos para el componente `NicknameModal`.
- */
 
 const styles = StyleSheet.create({
   modalOverlay: {
