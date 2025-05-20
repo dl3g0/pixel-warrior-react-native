@@ -95,7 +95,7 @@ const Canvas = ({ size, nickname, selectedColor, onPixelInfo }) => {
    * @param {number} x La coordenada x del píxel tocado.
    * @param {number} y La coordenada y del píxel tocado.
    */
-
+ 
   const handlePixelPress = useCallback((x: number, y: number) => {
     if (!nickname) {
       onPixelInfo('Ingresa tu nickname antes de pintar');
