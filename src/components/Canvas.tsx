@@ -6,13 +6,11 @@ import { socket } from '../services/socket';
 const Canvas = ({ size, nickname, selectedColor, onPixelInfo }) => {
   const [canvas, setCanvas] = useState(() => Array.from({ length: 100 }, () => Array(100).fill('#FFFFFF')));
   const [loading, setLoading] = useState(true);
-
-  // Tamaño píxel
   const pixelSize = useMemo(() => size / 100, [size]);
 
-  // Escuchar socket para datos y cambios de píxeles
   useEffect(() => {
     const onCanvasData = (firebaseData) => {
+      // Valida y estructura los datos recibidos para asegurar una matriz 100x100.
       const validatedData = Array.from({ length: 100 }, (_, x) =>
         Array.from({ length: 100 }, (_, y) => firebaseData[x]?.[y] || '#FFFFFF')
       );
@@ -38,8 +36,7 @@ const Canvas = ({ size, nickname, selectedColor, onPixelInfo }) => {
       socket.off('pixelChange', onPixelChange);
     };
   }, []);
-
-  // Manejar toque en píxel
+ 
   const handlePixelPress = useCallback((x: number, y: number) => {
     if (!nickname) {
       onPixelInfo('Ingresa tu nickname antes de pintar');
@@ -57,6 +54,7 @@ const Canvas = ({ size, nickname, selectedColor, onPixelInfo }) => {
     onPixelInfo(`Píxel (${x}, ${y}) pintado con ${selectedColor}`);
   }, [nickname, selectedColor]);
 
+  // Renderiza un indicador de carga mientras se obtienen los datos iniciales del lienzo.
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { width: size, height: size }]}>
@@ -97,4 +95,6 @@ const styles = StyleSheet.create({
   },
 });
 
+// Envuelve el componente con React.memo para optimizar el rendimiento evitando re-renderizaciones innecesarias
+// si las props no han cambiado.
 export default React.memo(Canvas);
